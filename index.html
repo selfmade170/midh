@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Dive: DALL·E vs. Stable Diffusion vs. Midjourney</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        .slide-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .section-title {
+            font-size: 1.875rem; /* text-3xl */
+            font-weight: 700;
+            color: #1f2937; /* gray-800 */
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #60a5fa; /* blue-400 */
+            padding-bottom: 0.5rem;
+        }
+        .subsection-title {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 600;
+            color: #374151; /* gray-700 */
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb; /* gray-200 */
+        }
+        .card-title {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 600;
+            color: #111827; /* gray-900 */
+        }
+        .list-item { /* This class was defined but not used, can be removed or used if needed */
+            display: flex;
+            align-items: start;
+            margin-bottom: 0.5rem;
+            color: #4b5563; /* gray-600 */
+        }
+        .list-item svg { /* This class was defined but not used */
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.75rem;
+            color: #3b82f6; /* blue-500 */
+            flex-shrink: 0;
+            margin-top: 0.125rem;
+        }
+        .table-container {
+            overflow-x: auto;
+            margin-top: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb; /* gray-200 */
+            vertical-align: top;
+        }
+        th {
+            background-color: #f9fafb; /* gray-50 */
+            font-weight: 600;
+            color: #374151; /* gray-700 */
+        }
+        td {
+            color: #4b5563; /* gray-600 */
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .emoji-icon {
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+        .analogy-card {
+            background-color: #e0f2fe; /* light blue */
+            border-left: 4px solid #3b82f6; /* blue-500 */
+        }
+        .qa-card {
+            background-color: #fef3c7; /* light yellow */
+            border-left: 4px solid #f59e0b; /* amber-500 */
+        }
+        .negative-prompt {
+            background-color: #fee2e2; /* light red for negative prompt */
+            color: #b91c1c; /* dark red for negative prompt text */
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        .positive-prompt {
+            background-color: #dcfce7; /* light green for positive prompt */
+            color: #166534; /* dark green for positive prompt text */
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        .parameter {
+            background-color: #e0e7ff; /* light indigo */
+            color: #3730a3; /* dark indigo */
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-family: monospace;
+        }
+
+        /* Styles for interactive elements */
+        .clickable-header {
+            cursor: pointer;
+            padding: 0.5rem; /* Add some padding to make it easier to click */
+            border-radius: 8px;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .clickable-header:hover {
+            background-color: #f9fafb; /* Light hover effect */
+        }
+        .toggle-icon {
+            font-size: 1.25rem; /* text-xl */
+            transition: transform 0.2s ease-in-out;
+        }
+        .details-content.hidden + .clickable-header .toggle-icon,
+        .qa-answer.hidden + .clickable-header .toggle-icon { /* This logic is a bit off, will fix in JS */
+             /* transform: rotate(-90deg); */ /* This was for a different icon, text will be changed by JS */
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800">🧠 Deep Dive: Image Generation Models</h1>
+            <p class="text-xl text-gray-600 mt-2">DALL·E vs. Stable Diffusion vs. Midjourney</p>
+        </header>
+
+        <section class="mb-10">
+            <h2 class="section-title">💡 Analogies for Students</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="card analogy-card">
+                    <h3 class="card-title mb-0"><span class="emoji-icon">🧩</span>Stable Diffusion is like...</h3>
+                    <p class="text-gray-700">A LEGO set — build what you want, piece by piece. Highly customizable and open.</p>
+                </div>
+                <div class="card analogy-card">
+                    <h3 class="card-title mb-0"><span class="emoji-icon">🪄</span>Midjourney is like...</h3>
+                    <p class="text-gray-700">An art filter app — press a button, get magic. Great for artistic styles with less control.</p>
+                </div>
+                <div class="card analogy-card">
+                    <h3 class="card-title mb-0"><span class="emoji-icon">🧞</span>DALL·E 3 is like...</h3>
+                    <p class="text-gray-700">A genie that rewrites your wish before drawing. Excels at understanding complex text prompts.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid md:grid-cols-1 lg:grid-cols-1 gap-8"> <div class="card">
+                <div class="model-header clickable-header flex justify-between items-center">
+                    <div>
+                        <h2 class="card-title text-2xl"><span class="emoji-icon">🧬</span>1. Stable Diffusion</h2>
+                        <p class="text-sm text-blue-600 font-semibold">The Modular Open-Source Engineer</p>
+                    </div>
+                    <span class="toggle-icon text-blue-500">▼</span>
+                </div>
+                <div class="model-details pt-3">
+                    <h3 class="subsection-title text-lg"><span class="emoji-icon">🧪</span>Architecture:</h3>
+                    <ul class="list-none space-y-2 text-gray-700 mb-4 pl-4">
+                        <li>Latent Diffusion Model (LDM)</li>
+                        <li>Compresses images into "latent space", then denoises step-by-step.</li>
+                        <li>Built with UNet + autoencoder + CLIP.</li>
+                    </ul>
+                    <h3 class="subsection-title text-lg"><span class="emoji-icon">🧰</span>Key Features:</h3>
+                    <ul class="list-none space-y-2 text-gray-700 mb-4 pl-4">
+                        <li>Fully open-source: run, train, customize.</li>
+                        <li>Accepts <span class="positive-prompt">prompt</span> + <span class="negative-prompt">negative prompt</span>.</li>
+                        <li>Control: <span class="parameter">steps</span>, <span class="parameter">seed</span>, <span class="parameter">CFG scale</span>, <span class="parameter">sampler</span>, <span class="parameter">resolution</span>.</li>
+                    </ul>
+                    <h3 class="subsection-title text-lg"><span class="emoji-icon">💡</span>Result:</h3>
+                    <ul class="list-none space-y-2 text-gray-700 pl-4">
+                        <li>Very flexible.</li>
+                        <li>"Engineer" your result like a developer or artist.</li>
+                        <li>Slower learning curve, but endless customization.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="model-header clickable-header flex justify-between items-center">
+                    <div>
+                        <h2 class="card-title text-2xl"><span class="emoji-icon">🎨</span>2. Midjourney</h2>
+                        <p class="text-sm text-purple-600 font-semibold">The Artistic Black Box</p>
+                    </div>
+                    <span class="toggle-icon text-purple-500">▼</span>
+                </div>
+                <div class="model-details pt-3">
+                    <h3 class="subsection-title text-lg"><span class="emoji-icon">🧪</span>Architecture:</h3>
+                    <ul class="list-none space-y-2 text-gray-700 mb-4 pl-4">
+                        <li>Not public. Assumed: diffusion + style-conditioned transformers.</li>
+                        <li>Trained on private datasets (unknown licensing).</li>
+                        <li>Likely fine-tuned on artistic, design-heavy data.</li>
+                    </ul>
+                    <h3 class="subsection-title text-lg"><span class="emoji-icon">🧰</span>Key Features:</h3>
+                    <ul class="list-none space-y-2 text-gray-700 mb-4 pl-4">
+                        <li>Works via Discord, not a coding interface.</li>
+                        <li>No direct access to seed or internal model parameters.</li>
+                        <li>Accepts <span class="positive-prompt">prompt</span> and optional stylization parameters like <span class="parameter">--v 5</span>, <span class="parameter">--ar 16:9</span>.</li>
+                    </ul>
+                    <h3 class="subsection-title text-lg"><span class="emoji-icon">💡</span>Result:</h3>
+                    <ul class="list-none space-y-2 text-gray-700 pl-4">
+                        <li>Beautiful, stylized, dramatic images.</li>
+                        <li>Great for artists, concept creators.</li>
+                        <li>Less precision and reproducibility than Stable Diffusion.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="model-header clickable-header flex justify-between items-center">
+                    <div>
+                        <h2 class="card-title text-2xl"><span class="emoji-icon">🤖</span>3. DALL·E 2 / 3</h2>
+                        <p class="text-sm text-green-600 font-semibold">The Text-Aware Generator</p>
+                    </div>
+                    <span class="toggle-icon text-green-500">▼</span>
+                </div>
+                <div class="model-details pt-3">
+                    <h3 class="subsection-title text-lg"><span class="emoji-icon">🧪</span>Architecture:</h3>
+                    <ul class="list-none space-y-2 text-gray-700 mb-4 pl-4">
+                        <li>DALL·E 2: Uses CLIP + diffusion.</li>
+                        <li>DALL·E 3 (in ChatGPT): Uses GPT-4 to rewrite prompts + a proprietary image model.</li>
+                    </ul>
+                    <h3 class="subsection-title text-lg"><span class="emoji-icon">🧰</span>Key Features:</h3>
+                    <ul class="list-none space-y-2 text-gray-700 mb-4 pl-4">
+                        <li>Very good at understanding complex prompts (thanks to GPT integration).</li>
+                        <li>Can generate text in images (Midjourney & SD struggle).</li>
+                        <li>Available only via ChatGPT Pro (DALL·E 3).</li>
+                    </ul>
+                    <h3 class="subsection-title text-lg"><span class="emoji-icon">💡</span>Result:</h3>
+                    <ul class="list-none space-y-2 text-gray-700 pl-4">
+                        <li>Most accurate for scene composition and storytelling.</li>
+                        <li>Least customizable.</li>
+                        <li>Works best when you just describe what you want — no tuning.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <section class="mt-12">
+            <h2 class="section-title">🔬 Key Technical Comparisons</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Stable Diffusion</th>
+                            <th>Midjourney</th>
+                            <th>DALL·E 3 (in ChatGPT)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Architecture</strong></td>
+                            <td>Latent Diffusion</td>
+                            <td>Unknown (likely diffusion + transformer)</td>
+                            <td>GPT+CLIP-guided diffusion</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Access</strong></td>
+                            <td>Open-source</td>
+                            <td>Discord-based only</td>
+                            <td>API-only (no code access)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Prompt control</strong></td>
+                            <td>Full (prompt + negative + seed)</td>
+                            <td>Medium (prompt + options)</td>
+                            <td>Natural language only</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Style accuracy</strong></td>
+                            <td>Medium</td>
+                            <td>High (artistic)</td>
+                            <td>Medium (story-driven)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reproducibility</strong></td>
+                            <td>Yes (seeded)</td>
+                            <td>No</td>
+                            <td>Limited</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Supports fine-tuning</strong></td>
+                            <td>Yes (LoRA, DreamBooth)</td>
+                            <td>No</td>
+                            <td>No</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Supports text in image</strong></td>
+                            <td>No (very weak)</td>
+                            <td>No (not reliable)</td>
+                            <td>Yes</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="mt-12">
+            <h2 class="section-title">💬 Questions Students Might Ask</h2>
+            <div class="space-y-6">
+                <div class="card qa-card">
+                    <div class="qa-header clickable-header flex justify-between items-center">
+                        <h3 class="card-title mb-0">Why does Midjourney look "better" sometimes?</h3>
+                        <span class="toggle-icon text-amber-500">▶</span>
+                    </div>
+                    <div class="qa-answer hidden pt-2">
+                        <p class="text-gray-700">Because it was trained to generate beautiful art fast — but you can’t control everything like you can with Stable Diffusion. It's often fine-tuned for aesthetics out-of-the-box.</p>
+                    </div>
+                </div>
+                <div class="card qa-card">
+                    <div class="qa-header clickable-header flex justify-between items-center">
+                        <h3 class="card-title mb-0">Why use Stable Diffusion if others are easier?</h3>
+                        <span class="toggle-icon text-amber-500">▶</span>
+                    </div>
+                    <div class="qa-answer hidden pt-2">
+                        <p class="text-gray-700">Because you can customize everything: use your own style, train your own model (e.g., on your artwork), and have fine-grained control over the generation process. It offers unparalleled flexibility for those willing to learn.</p>
+                    </div>
+                </div>
+                <div class="card qa-card">
+                    <div class="qa-header clickable-header flex justify-between items-center">
+                        <h3 class="card-title mb-0">Can I combine them?</h3>
+                        <span class="toggle-icon text-amber-500">▶</span>
+                    </div>
+                    <div class="qa-answer hidden pt-2">
+                        <p class="text-gray-700">Yes! Some artists use Midjourney for quick draft ideas or inspiration, then refine the concepts in image editing software like Photoshop. Others might try to recreate a style they like from Midjourney in Stable Diffusion using techniques like LoRA (Low-Rank Adaptation) for more control.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="mt-12 pt-6 border-t border-gray-300 text-center text-gray-500 text-sm">
+            <p>Understanding AI Image Generation Models &copy; 2024</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Handle model card toggles
+            const modelHeaders = document.querySelectorAll('.model-header');
+            modelHeaders.forEach(header => {
+                header.addEventListener('click', function () {
+                    const details = this.nextElementSibling; // .model-details
+                    const icon = this.querySelector('.toggle-icon');
+                    
+                    details.classList.toggle('hidden');
+                    if (details.classList.contains('hidden')) {
+                        icon.textContent = '▶';
+                    } else {
+                        icon.textContent = '▼';
+                    }
+                });
+            });
+
+            // Handle Q&A card toggles
+            const qaHeaders = document.querySelectorAll('.qa-header');
+            qaHeaders.forEach(header => {
+                header.addEventListener('click', function () {
+                    const answer = this.nextElementSibling; // .qa-answer
+                    const icon = this.querySelector('.toggle-icon');
+                    
+                    answer.classList.toggle('hidden');
+                    if (answer.classList.contains('hidden')) {
+                        icon.textContent = '▶';
+                    } else {
+                        icon.textContent = '▼';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
